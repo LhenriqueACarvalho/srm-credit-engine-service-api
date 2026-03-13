@@ -1,0 +1,21 @@
+package com.srm.credit.engine.SRM_Credit_Engine.entity;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Data;
+
+import java.util.UUID;
+
+@Entity
+@Table(name = "currencies")
+@Data
+public class Currency {
+
+    @Id
+    private UUID id;
+
+    private String code;
+
+    private String name;
+}
