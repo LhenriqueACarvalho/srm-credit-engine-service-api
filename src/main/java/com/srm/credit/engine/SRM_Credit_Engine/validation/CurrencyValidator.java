@@ -10,21 +10,27 @@ public class CurrencyValidator implements ConstraintValidator<ValidCurrency, Str
     @Autowired
     private CurrencyRepository currencyRepository;
 
+    private ValidCurrency annotation;
+
     @Override
     public void initialize(ValidCurrency constraintAnnotation) {
+        this.annotation = constraintAnnotation;
     }
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
         if (value == null || value.isEmpty()) {
-            return true; // @NotNull ou @NotBlank vai validar isso
+            return true;
         }
 
         if (currencyRepository == null) {
             return false;
         }
 
-        return currencyRepository.findByCode(value.toUpperCase()).isPresent();
+        boolean exists = currencyRepository.findByCode(value.toUpperCase()).isPresent();
+
+
+        return !annotation.mustExist() || exists;
     }
 }
 

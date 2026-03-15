@@ -12,4 +12,5 @@ public @interface ValidCurrency {
     String message() default "Invalid currency code";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
+    boolean mustExist() default false;
 }

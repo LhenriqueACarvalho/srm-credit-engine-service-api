@@ -1,5 +1,8 @@
 package com.srm.credit.engine.SRM_Credit_Engine.strategy;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class PricingStrategyFactory {
     public PricingStrategy getStrategy(String type) {
 
