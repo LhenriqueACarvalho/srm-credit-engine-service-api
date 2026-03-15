@@ -2,8 +2,10 @@ package com.srm.credit.engine.SRM_Credit_Engine.integration;
 
 import com.srm.credit.engine.SRM_Credit_Engine.entity.Currency;
 import com.srm.credit.engine.SRM_Credit_Engine.entity.ExchangeRate;
+import com.srm.credit.engine.SRM_Credit_Engine.entity.ReceivableType;
 import com.srm.credit.engine.SRM_Credit_Engine.repository.CurrencyRepository;
 import com.srm.credit.engine.SRM_Credit_Engine.repository.ExchangeRateRepository;
+import com.srm.credit.engine.SRM_Credit_Engine.repository.ReceivableTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +37,18 @@ public class TransactionIntegrationTest {
     @Autowired
     private ExchangeRateRepository exchangeRateRepository;
 
+    @Autowired
+    private ReceivableTypeRepository receivableTypeRepository;
+
     @BeforeEach
     public void setUp() {
+        // Create receivable types
+        ReceivableType duplicata = new ReceivableType();
+        duplicata.setId(UUID.randomUUID());
+        duplicata.setName("duplicata");
+        duplicata.setSpread(new BigDecimal("0.0150"));
+        receivableTypeRepository.save(duplicata);
+
         // Create currencies
         Currency brl = new Currency();
         brl.setId(UUID.randomUUID());
