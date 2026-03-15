@@ -14,14 +14,14 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class ExchangeRateDTO {
 
-    @NotBlank(message = "Source currency code cannot be blank")
+    @NotBlank(message = "Valor nao pode ser nulo ou vazio")
     private String fromCode;
 
-    @NotBlank(message = "Target currency code cannot be blank")
+    @NotBlank(message = "Valor nao pode ser nulo ou vazio")
     private String toCode;
 
-    @NotNull(message = "Exchange rate cannot be null")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Exchange rate must be greater than 0")
+    @NotNull(message = "Valor Exchange rate nao pode ser nulo")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Exchange rate precisa ser maior que zero")
     private BigDecimal rate;
 }
 

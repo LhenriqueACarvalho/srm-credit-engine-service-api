@@ -1,5 +1,6 @@
 package com.srm.credit.engine.SRM_Credit_Engine.dto;
 
+import com.srm.credit.engine.SRM_Credit_Engine.validation.ValidCurrency;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -11,11 +12,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CurrencyDTO {
 
-    @NotBlank(message = "Currency code cannot be blank")
-    @Size(min = 3, max = 3, message = "Currency code must be exactly 3 characters")
+    @NotBlank(message = "Valor nao pode ser nulo ou vazio")
+    @Size(min = 3, max = 3, message = "Valor precisa ter exatamente 3 caracteres")
+    @ValidCurrency
     private String code;
 
-    @NotBlank(message = "Currency name cannot be blank")
+    @NotBlank(message = "Valor nao pode ser nulo ou vazio")
     private String name;
 }
 
