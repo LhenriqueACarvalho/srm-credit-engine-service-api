@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class TransactionService {
@@ -47,10 +48,12 @@ public class TransactionService {
 
         BigDecimal finalValue = pv.multiply(rate);
 
-        Receivable receivable = receivableRepo.save(new Receivable());
+        Receivable receivable = new Receivable();
+        receivable.setId(UUID.randomUUID());
+        receivable = receivableRepo.save(receivable);
 
         Transaction t = new Transaction();
-
+        t.setId(UUID.randomUUID());
         t.setReceivable(receivable);
         t.setPresentValue(pv);
         t.setExchangeRate(rate);
