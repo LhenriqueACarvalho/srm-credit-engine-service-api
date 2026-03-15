@@ -1,0 +1,31 @@
+groups:
+  - name: srm_credit_engine
+    rules:
+
+      - alert: HighErrorRate
+        expr: rate(srm_errors_total[5m]) > 0.05
+        for: 5m
+        annotations:
+          summary: "Taxa alta de erros detectada"
+          description: "Taxa de erro acima de 5% nos últimos 5 minutos"
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: hikaricp_connections_active / hikaricp_connections_max > 0.9
+        for: 2m
+        annotations:
+          summary: "Pool de conexão quase esgotado"
+          description: "Pool de conexão acima de 90% de utilização"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        annotations:
+          summary: "Tempo de resposta elevado"
+          description: "P95 de latência acima de 1 segundo"
+
+      - alert: LowCacheHitRate
+        expr: cache_hit_ratio < 0.7
+        for: 10m
+        annotations:
+          summary: "Taxa de acerto de cache baixa"
+          description: "Taxa de acerto de cache abaixo de 70%"

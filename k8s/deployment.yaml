@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srm-credit-engine
+  labels:
+    app: srm-credit-engine
+
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: srm-credit-engine
+
+  template:
+    metadata:
+      labels:
+        app: srm-credit-engine
+
+    spec:
+      containers:
+        - name: srm-credit-engine
+          image: srm-credit-engine:latest
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 8081
+
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres-service:5432/credit_engine"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: password
+
+          livenessProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /api/actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 5
+
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: srm-credit-engine-service
+
+spec:
+  selector:
+    app: srm-credit-engine
+
+  type: LoadBalancer
+
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8081

@@ -6,6 +6,8 @@ import com.srm.credit.engine.SRM_Credit_Engine.entity.Currency;
 import com.srm.credit.engine.SRM_Credit_Engine.entity.ExchangeRate;
 import com.srm.credit.engine.SRM_Credit_Engine.repository.CurrencyRepository;
 import com.srm.credit.engine.SRM_Credit_Engine.repository.ExchangeRateRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class CurrencyManagementService {
         this.exchangeRateRepository = exchangeRateRepository;
     }
 
+    @Cacheable("currencies")
     public List<CurrencyDTO> listCurrencies() {
         return currencyRepository.findAll()
                 .stream()
@@ -35,6 +38,7 @@ public class CurrencyManagementService {
                 .collect(Collectors.toList());
     }
 
+    @CacheEvict(value = "currencies", allEntries = true)
     @Transactional
     public CurrencyDTO createCurrency(CurrencyDTO dto) {
         Currency currency = new Currency();
@@ -65,6 +69,7 @@ public class CurrencyManagementService {
         return toDTO(saved);
     }
 
+    @Cacheable(value = "exchangeRate", key = "#p0 + '-' + #p1")
     public ExchangeRateDTO getExchangeRate(String from, String to) {
         ExchangeRate rate = exchangeRateRepository
                 .findTopByFromCurrency_CodeAndToCurrency_CodeOrderByCreatedAtDesc(from, to)

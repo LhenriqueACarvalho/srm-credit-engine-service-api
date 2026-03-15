@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
@@ -56,4 +58,11 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             @Param("currency") String currency,
             @Param("cedent") String cedent,
             Pageable pageable);
+
+    @Query(value = "SELECT t FROM Transaction t WHERE t.createdAt BETWEEN ?1 AND ?2 ORDER BY t.createdAt DESC")
+    List<Transaction> findTransactionsByDateRange(LocalDateTime startDate, LocalDateTime endDate);
+
+    @Query(value = "SELECT COUNT(*) FROM transactions WHERE created_at >= NOW() - INTERVAL '1 hour'",
+            nativeQuery = true)
+    Long countRecentTransactions();
 }
