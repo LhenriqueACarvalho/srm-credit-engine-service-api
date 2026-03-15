@@ -1,6 +1,10 @@
 package com.srm.credit.engine.SRM_Credit_Engine.controller;
 
+import com.srm.credit.engine.SRM_Credit_Engine.dto.SimulationRequestDTO;
+import com.srm.credit.engine.SRM_Credit_Engine.dto.response.SimulationResponse;
 import com.srm.credit.engine.SRM_Credit_Engine.service.PricingService;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,19 +16,25 @@ import java.math.BigDecimal;
 @RequestMapping("/receivables")
 public class ReceivableController {
 
-    private final PricingService pricingService;
+    private final PricingService service;
 
-    public ReceivableController(PricingService pricingService) {
-        this.pricingService = pricingService;
+    public ReceivableController(PricingService service) {
+        this.service = service;
     }
 
     @PostMapping("/simulate")
-    public BigDecimal simulate(@RequestBody SimulationRequest request) {
+    @Operation(summary = "Simulação de recebiveis")
+    public SimulationResponse simulate(
+            @RequestBody @Valid SimulationRequestDTO req
+    ) {
 
-        return pricingService.calculate(
-                request.getFaceValue(),
-                request.getDays(),
-                request.getStrategy()
-        );
+        BigDecimal result =
+                service.calculate(
+                        req.getFaceValue(),
+                        req.getDaysToMaturity(),
+                        req.getReceivableType()
+                );
+
+        return new SimulationResponse(result);
     }
 }

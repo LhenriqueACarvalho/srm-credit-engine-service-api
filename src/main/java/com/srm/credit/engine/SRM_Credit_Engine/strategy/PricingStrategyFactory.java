@@ -8,7 +8,7 @@ public class PricingStrategyFactory {
             case "duplicata" -> new DuplicataStrategy();
             case "cheque" -> new ChequeStrategy();
 
-            default -> throw new IllegalArgumentException("Unknown type");
+            default -> throw new IllegalArgumentException("Tipo Invalido: " + type);
         };
     }
 }

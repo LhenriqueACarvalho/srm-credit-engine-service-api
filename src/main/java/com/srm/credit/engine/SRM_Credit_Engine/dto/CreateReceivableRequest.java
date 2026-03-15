@@ -1,17 +1,16 @@
 package com.srm.credit.engine.SRM_Credit_Engine.dto;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.math.BigDecimal;
 
-@Getter
-@Setter
-public class SimulationRequestDTO {
+@Data
+public class CreateReceivableRequest {
 
-    @NotNull
+    @NotBlank
     private String receivableType;
 
     @NotNull
@@ -22,9 +21,9 @@ public class SimulationRequestDTO {
     @Min(1)
     private Integer daysToMaturity;
 
-    @NotNull
+    @NotBlank
     private String currency;
 
-    @NotNull
+    @NotBlank
     private String paymentCurrency;
 }

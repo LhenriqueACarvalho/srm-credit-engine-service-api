@@ -1,6 +1,7 @@
 package com.srm.credit.engine.SRM_Credit_Engine.service;
 
 import com.srm.credit.engine.SRM_Credit_Engine.strategy.PricingStrategy;
+import com.srm.credit.engine.SRM_Credit_Engine.strategy.PricingStrategyFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -8,13 +9,17 @@ import java.math.RoundingMode;
 
 @Service
 public class PricingService {
+    private final PricingStrategyFactory factory;
+
     private final BigDecimal baseRate = new BigDecimal("0.02");
 
-    public BigDecimal calculate(
-            BigDecimal faceValue,
-            int days,
-            PricingStrategy strategy
-    ) {
+    public PricingService(PricingStrategyFactory factory) {
+        this.factory = factory;
+    }
+
+    public BigDecimal calculate(BigDecimal faceValue, int days, String type) {
+
+        PricingStrategy strategy = factory.getStrategy(type);
 
         BigDecimal spread = strategy.getSpread();
 
