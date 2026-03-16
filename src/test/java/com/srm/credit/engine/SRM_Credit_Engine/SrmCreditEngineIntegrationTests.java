@@ -4,15 +4,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(properties = {
-		"spring.redis.enabled=false",
-		"spring.data.redis.host=localhost",
-		"spring.data.redis.port=6379"
-})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@TestPropertySource(locations = "classpath:application-test.properties")
 @DisplayName("SRM Credit Engine Integration Tests")
 class SrmCreditEngineIntegrationTests {
 

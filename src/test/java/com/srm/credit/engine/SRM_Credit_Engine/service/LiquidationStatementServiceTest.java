@@ -231,7 +231,7 @@ class LiquidationStatementServiceTest {
         Page<Map<String, Object>> page = new PageImpl<>(
                 items,
                 PageRequest.of(1, 20),
-                25
+                40
         );
 
         Map<String, Object> totals = new HashMap<>();
@@ -261,7 +261,7 @@ class LiquidationStatementServiceTest {
         assertNotNull(response);
         assertEquals(1, response.getPageNumber());
         assertEquals(20, response.getPageSize());
-        assertEquals(25, response.getTotalRecords());
+        assertEquals(40, response.getTotalRecords());
         assertEquals(2, response.getTotalPages());
         assertEquals(20L, response.getTransactionCount());
     }

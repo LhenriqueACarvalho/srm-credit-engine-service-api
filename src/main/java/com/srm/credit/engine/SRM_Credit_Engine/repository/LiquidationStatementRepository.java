@@ -1,5 +1,6 @@
 package com.srm.credit.engine.SRM_Credit_Engine.repository;
 
+import com.srm.credit.engine.SRM_Credit_Engine.entity.Transaction;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,7 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Repository
-public interface LiquidationStatementRepository extends JpaRepository<Object, UUID> {
+public interface LiquidationStatementRepository extends JpaRepository<Transaction, UUID> {
 
     /**
      * Consulta otimizada para extrair dados de liquidação com filtros
@@ -46,7 +47,7 @@ public interface LiquidationStatementRepository extends JpaRepository<Object, UU
             INNER JOIN currencies c ON r.currency_id = c.id
             WHERE t.created_at >= :startDate 
               AND t.created_at < :endDate
-              AND (:cedenteName IS NULL OR 'Cedente Sistema' LIKE %:cedenteName%)
+              AND (:cedenteName IS NULL OR 'Cedente Sistema' LIKE CONCAT('%', :cedenteName, '%'))
               AND (:currencyCode IS NULL OR c.code = :currencyCode)
             ORDER BY t.created_at DESC
             """,
@@ -58,7 +59,7 @@ public interface LiquidationStatementRepository extends JpaRepository<Object, UU
             INNER JOIN currencies c ON r.currency_id = c.id
             WHERE t.created_at >= :startDate 
               AND t.created_at < :endDate
-              AND (:cedenteName IS NULL OR 'Cedente Sistema' LIKE %:cedenteName%)
+              AND (:cedenteName IS NULL OR 'Cedente Sistema' LIKE CONCAT('%', :cedenteName, '%'))
               AND (:currencyCode IS NULL OR c.code = :currencyCode)
             """,
             nativeQuery = true)
@@ -90,7 +91,7 @@ public interface LiquidationStatementRepository extends JpaRepository<Object, UU
             INNER JOIN currencies c ON r.currency_id = c.id
             WHERE t.created_at >= :startDate 
               AND t.created_at < :endDate
-              AND (:cedenteName IS NULL OR 'Cedente Sistema' LIKE %:cedenteName%)
+              AND (:cedenteName IS NULL OR 'Cedente Sistema' LIKE CONCAT('%', :cedenteName, '%'))
               AND (:currencyCode IS NULL OR c.code = :currencyCode)
             """,
             nativeQuery = true)
