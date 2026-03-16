@@ -32,7 +32,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Testes de integração para validar rastreamento de requisições
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+		properties = {
+				"spring.redis.enabled=false",
+				"spring.data.redis.host=localhost",
+				"spring.data.redis.port=6379"
+		})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @DisplayName("Testes de Integração - Rastreamento de Requisições")
