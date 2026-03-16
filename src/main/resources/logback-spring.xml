@@ -2,17 +2,39 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <springProperty name="LOG_FILE" source="logging.file.name" default="logs/app.log"/>
+    <springProperty name="LOG_FILE" source="logging.file.name" default="logs/application.log"/>
+    <springProperty name="APP_NAME" source="spring.application.name" default="SRM-Credit-Engine"/>
 
-    <!-- Appender Console -->
+    <!-- Padrão de log com contexto de rastreamento em português -->
+    <property name="PADRAO_LOG_CONSOLE" value="%d{dd/MM/yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+    <property name="PADRAO_LOG_ARQUIVO" value="%d{dd/MM/yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+
+    <!-- Appender Console com padrão customizado -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        <target>System.out</target>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>${PADRAO_LOG_CONSOLE}</pattern>
+        </encoder>
     </appender>
 
-    <!-- Appender File -->
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <!-- Appender File com JSON para melhor análise -->
+    <appender name="ARQUIVO_JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_FILE}</file>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <charset>UTF-8</charset>
+            <fieldNames>
+                <timestamp>data_hora</timestamp>
+                <version>versao</version>
+                <level>nivel</level>
+                <levelValue>nivel_valor</levelValue>
+                <message>mensagem</message>
+                <logger>logger_nome</logger>
+                <thread>thread_nome</thread>
+                <mdc>contexto_mapeado</mdc>
+            </fieldNames>
+            <customFields>{"aplicacao":"${APP_NAME}","ambiente":"producao"}</customFields>
+        </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
@@ -22,8 +44,64 @@
         </rollingPolicy>
     </appender>
 
+    <!-- Appender separado para logs de erro -->
+    <appender name="ARQUIVO_ERRO" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/erros.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{dd/MM/yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/erros.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>50MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Logger para a aplicação SRM -->
+    <logger name="com.srm.credit.engine" level="DEBUG"/>
+    <logger name="com.srm.credit.engine.SRM_Credit_Engine.utils" level="DEBUG"/>
+    <logger name="com.srm.credit.engine.SRM_Credit_Engine.config" level="DEBUG"/>
+
+    <!-- Logger para Spring Web -->
+    <logger name="org.springframework.web" level="INFO"/>
+    <logger name="org.springframework.security" level="INFO"/>
+
+    <!-- Logger para Hibernate/JPA -->
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="DEBUG"/>
+
+    <!-- Logger para Flyway -->
+    <logger name="org.flywaydb" level="INFO"/>
+
+    <!-- Root Logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="ARQUIVO_JSON"/>
+        <appender-ref ref="ARQUIVO_ERRO"/>
     </root>
+
+    <!-- Perfil para produção -->
+    <springProfile name="prod">
+        <root level="WARN">
+            <appender-ref ref="ARQUIVO_JSON"/>
+            <appender-ref ref="ARQUIVO_ERRO"/>
+        </root>
+    </springProfile>
+
+    <!-- Perfil para desenvolvimento -->
+    <springProfile name="dev">
+        <root level="DEBUG">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ARQUIVO_JSON"/>
+        </root>
+    </springProfile>
 </configuration>

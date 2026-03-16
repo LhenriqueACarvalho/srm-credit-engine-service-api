@@ -4,7 +4,7 @@
 
 ## 🎯 Visão Geral
 
-O **SRM Credit Engine** é uma aplicação backend robusta desenvolvida em **Java/Spring Boot** que implementa uma plataforma completa para gerenciamento e cessão de créditos em múltiplas moedas. O sistema oferece funcionalidades avançadas de precificação, simulação de recebiveis, gestão de taxas de câmbio e geração de extratos transacionais.
+O **SRM Credit Engine** é uma aplicação backend robusta desenvolvida em **Java/Spring Boot** que implementa uma plataforma completa para gerenciamento e cessão de créditos em múltiplas moedas. O sistema oferece funcionalidades avançadas de precificação, simulação de recebiveis, gestão de taxas de câmbio, geração de extratos transacionais e análise analítica de liquidação.
 
 ### Características Principais
 
@@ -14,9 +14,16 @@ O **SRM Credit Engine** é uma aplicação backend robusta desenvolvida em **Jav
 ✅ **Simulação de Preços** - Cálculo de preços finais com base em estratégias configuráveis  
 ✅ **Registro de Transações** - Rastreamento completo de todas as operações  
 ✅ **Extrato Detalhado** - Geração de extratos consolidados  
+✅ **Extrato de Liquidação** - Consultas analíticas paginadas com totalizações por período, cedente e moeda  
+✅ **Análise Analítica** - Volumes agregados por moeda e por tipo de recebível  
+✅ **Rastreamento Distribuído** - Correlação de logs via headers `X-Request-ID` e `X-User-ID`  
+✅ **Observabilidade** - Logging estruturado com AOP, métricas Micrometer e alertas Prometheus  
+✅ **Cache Redis** - Cache de consultas frequentes com fallback para `ConcurrentMapCacheManager`  
+✅ **Validação de Moeda** - Annotation customizada `@ValidCurrency` para validação via banco  
+✅ **Tratamento Global de Erros** - `@RestControllerAdvice` com resposta padronizada  
 ✅ **API RESTful Completa** - Documentação Swagger/OpenAPI integrada  
-✅ **Validações Robustas** - Camada de validação em toda a aplicação  
 ✅ **Migrações Automatizadas** - Flyway para versionamento de banco de dados  
+✅ **Containerização** - Dockerfile multi-stage e manifesto Kubernetes  
 
 ---
 
@@ -32,52 +39,96 @@ O **SRM Credit Engine** é uma aplicação backend robusta desenvolvida em **Jav
 | **Build** | Maven | 3.9+ |
 | **Migrações** | Flyway | Latest |
 | **ORM** | Hibernate/JPA | Latest |
+| **Cache** | Redis + ConcurrentMapCache | Latest |
+| **Métricas** | Micrometer + Prometheus | Latest |
 | **Documentação API** | Springdoc-OpenAPI | 3.0.2 |
 | **Utilitários** | Lombok | Latest |
+| **Containerização** | Docker + Kubernetes | Latest |
 
 ### Estrutura do Projeto
 
 ```
 src/main/
 ├── java/com/srm/credit/engine/SRM_Credit_Engine/
-│   ├── SrmCreditEngineApplication.java     # Classe principal da aplicação
-│   ├── config/                              # Configurações do Spring
-│   ├── controller/                          # Endpoints REST
-│   │   ├── CurrencyController.java         # Gerenciamento de moedas
-│   │   ├── ReceivableController.java       # Simulação de recebiveis
-│   │   ├── StatementController.java        # Extrato de transações
-│   │   └── TransactionController.java      # Registro de transações
-│   ├── dto/                                 # Data Transfer Objects
+│   ├── SrmCreditEngineApplication.java          # Classe principal da aplicação
+│   ├── config/                                   # Configurações do Spring
+│   │   ├── CacheConfiguration.java              # Cache Redis / ConcurrentMap
+│   │   ├── ConfiguradorWeb.java                 # Registro do interceptor de rastreamento
+│   │   ├── DatabaseHealthIndicator.java         # Health check customizado do BD
+│   │   ├── FlywayConfig.java                    # Configuração Flyway
+│   │   ├── InterceptadorRastreamento.java       # Interceptor X-Request-ID / X-User-ID
+│   │   ├── LoggingAspect.java                   # AOP: logs de entrada/saída/erro
+│   │   ├── MetricsConfiguration.java            # Contadores Micrometer customizados
+│   │   └── RedisConfig.java                     # Conexão Redis
+│   ├── controller/                               # Endpoints REST
+│   │   ├── CurrencyController.java              # Gerenciamento de moedas
+│   │   ├── LiquidationStatementController.java  # Analytics e extrato de liquidação ★ NOVO
+│   │   ├── ReceivableController.java            # Simulação de recebiveis
+│   │   ├── StatementController.java             # Extrato de transações
+│   │   └── TransactionController.java           # Registro de transações
+│   ├── dto/                                      # Data Transfer Objects
 │   │   ├── CreateReceivableRequest.java
 │   │   ├── CurrencyDTO.java
 │   │   ├── ExchangeRateDTO.java
+│   │   ├── LiquidationStatementFilterRequest.java  # ★ NOVO
+│   │   ├── LiquidationStatementLineItem.java        # ★ NOVO
+│   │   ├── LiquidationStatementResponse.java        # ★ NOVO
 │   │   ├── SimulationRequestDTO.java
 │   │   ├── TransactionStatementDTO.java
-│   │   └── response/                        # DTOs de resposta
-│   ├── entity/                              # Entidades JPA
-│   │   ├── Cedents.java                    # Cedentes de crédito
-│   │   ├── Currency.java                   # Moedas
-│   │   ├── ExchangeRate.java               # Taxas de câmbio
-│   │   ├── Receivable.java                 # Recebiveis
-│   │   ├── ReceivableType.java             # Tipos de recebivel
-│   │   └── Transaction.java                # Transações
-│   ├── exception/                           # Exceções customizadas
-│   ├── repository/                          # Interfaces Repository (Spring Data)
-│   ├── service/                             # Lógica de negócio
-│   │   ├── CurrencyManagementService.java  # Gerenciamento de moedas
-│   │   ├── ExchangeRateService.java        # Cálculo de taxas
-│   │   ├── PricingService.java             # Precificação
-│   │   ├── StatementService.java           # Extratos
-│   │   └── TransactionService.java         # Transações
-│   ├── strategy/                            # Padrão Strategy para precificação
-│   └── validation/                          # Validadores customizados
+│   │   └── response/
+│   ├── entity/                                   # Entidades JPA
+│   │   ├── Cedents.java
+│   │   ├── Currency.java
+│   │   ├── ExchangeRate.java
+│   │   ├── Receivable.java
+│   │   ├── ReceivableType.java
+│   │   └── Transaction.java
+│   ├── exception/                                # Exceções e tratamento global
+│   │   ├── ApiErrorResponse.java                # ★ NOVO - Resposta padronizada de erro
+│   │   └── GlobalExceptionHandler.java          # ★ NOVO - @RestControllerAdvice
+│   ├── repository/                               # Interfaces Repository (Spring Data)
+│   │   ├── CurrencyRepository.java
+│   │   ├── ExchangeRateRepository.java
+│   │   ├── LiquidationStatementRepository.java  # ★ NOVO - Queries nativas paginadas
+│   │   ├── ReceivableRepository.java
+│   │   ├── ReceivableTypeRepository.java
+│   │   └── TransactionRepository.java
+│   ├── service/                                  # Lógica de negócio
+│   │   ├── CurrencyManagementService.java
+│   │   ├── ExchangeRateService.java
+│   │   ├── LiquidationStatementService.java     # ★ NOVO
+│   │   ├── PricingService.java
+│   │   ├── StatementService.java
+│   │   └── TransactionService.java
+│   ├── strategy/                                 # Padrão Strategy para precificação
+│   │   ├── PricingStrategy.java                 # Interface base
+│   │   ├── DuplicataStrategy.java               # Spread: 1,5%
+│   │   ├── ChequeStrategy.java                  # Spread: 2,5%
+│   │   └── PricingStrategyFactory.java          # Factory de strategies
+│   ├── utils/                                    # Utilitários
+│   │   ├── ContextoRastreamento.java            # ★ NOVO - ThreadLocal de rastreamento
+│   │   └── LoggerObservabilidade.java           # ★ NOVO - Logger estruturado
+│   └── validation/                               # Validadores customizados
+│       ├── ValidCurrency.java                   # ★ NOVO - Annotation @ValidCurrency
+│       └── CurrencyValidator.java               # ★ NOVO - Validator contra BD
 └── resources/
-    ├── application.properties               # Configurações da aplicação
-    ├── db/migration/                        # Scripts SQL versionados
-    │   ├── V1__Initial_Schema.sql          # Schema inicial
-    │   └── V2__Insert_Initial_Data.sql     # Dados iniciais
-    ├── static/                              # Arquivos estáticos
-    └── templates/                           # Templates Thymeleaf (se aplicável)
+    ├── application.properties                    # Configurações da aplicação
+    ├── application-prod.properties.example       # Exemplo de configuração produção
+    ├── logback-spring.xml                        # Configuração de log estruturado
+    ├── db/migration/
+    │   ├── V1__Initial_Schema.sql               # Schema inicial
+    │   └── V2__Insert_Initial_Data.sql          # Dados iniciais
+    └── static/
+
+k8s/
+└── deployment.yaml                               # ★ NOVO - Deployment + Service Kubernetes
+
+prometheus/
+└── alert-rules.yml                               # ★ NOVO - Regras de alerta Prometheus
+
+scripts/
+├── flyway-repair.sql                             # Script de reparo Flyway
+└── health-check.sh                              # Script de health check
 ```
 
 ---
@@ -200,21 +251,20 @@ Registra todas as operações do sistema.
 CREATE TABLE transactions (
     id UUID PRIMARY KEY,
     receivable_id UUID NOT NULL,          -- Recebível associado
-    operation_type VARCHAR(50),           -- Tipo de operação
-    amount NUMERIC(19, 2),                -- Valor da transação
-    currency_id UUID,                     -- Moeda da transação
+    present_value NUMERIC(19, 2),        -- Valor presente (após desconto)
+    exchange_rate NUMERIC(19, 4),        -- Taxa de câmbio aplicada
+    final_value NUMERIC(19, 2),          -- Valor final em moeda de pagamento
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (receivable_id) REFERENCES receivables(id),
-    FOREIGN KEY (currency_id) REFERENCES currencies(id)
+    FOREIGN KEY (receivable_id) REFERENCES receivables(id)
 );
 ```
 
 **Atributos:**
 - `id`: Identificador único (UUID)
 - `receivableId`: Recebível relacionado
-- `operationType`: Tipo de operação realizada
-- `amount`: Valor da transação
-- `currencyId`: Moeda utilizada
+- `presentValue`: Valor presente após aplicação de desconto
+- `exchangeRate`: Taxa de câmbio utilizada na transação
+- `finalValue`: Valor final da transação na moeda de pagamento
 - `createdAt`: Data da transação
 
 ---
@@ -227,9 +277,9 @@ http://localhost:8081/api
 ```
 
 ### Documentação Interativa
-A documentação Swagger/OpenAPI está disponível em:
 ```
 http://localhost:8081/api/swagger-ui.html
+http://localhost:8081/api/v3/api-docs
 ```
 
 ---
@@ -326,12 +376,17 @@ Content-Type: application/json
 }
 ```
 
-**Descrição:**
-O sistema calcula o preço de cessão baseado em:
-- Valor de face do recebível
-- Dias até vencimento (desconto temporal)
-- Tipo de recebível (spread específico)
-- Taxa de juros configurada
+**Fórmula de Cálculo:**
+```
+Preço Final = Valor de Face × (1 - (Taxa de Desconto + Spread))
+
+Taxa de Desconto = (diasVencimento / 365) × Taxa de Juros
+```
+
+| Tipo de Recebível | Spread |
+|-------------------|--------|
+| `DUPLICATA`       | 1,5%   |
+| `CHEQUE`          | 2,5%   |
 
 ---
 
@@ -341,12 +396,15 @@ O sistema calcula o preço de cessão baseado em:
 ```http
 POST /transactions
 Content-Type: application/json
+X-Request-ID: req-001        ← opcional, gerado automaticamente se ausente
+X-User-ID: user-123          ← opcional
 
 {
-  "receivableId": "550e8400-e29b-41d4-a716-446655440000",
-  "operationType": "CESSÃO",
-  "amount": 9850.50,
-  "currencyId": "550e8400-e29b-41d4-a716-446655440001"
+  "receivableType": "DUPLICATA",
+  "faceValue": 10000.00,
+  "daysToMaturity": 30,
+  "currency": "BRL",
+  "paymentCurrency": "USD"
 }
 ```
 
@@ -354,13 +412,15 @@ Content-Type: application/json
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440010",
-  "receivableId": "550e8400-e29b-41d4-a716-446655440000",
-  "operationType": "CESSÃO",
-  "amount": 9850.50,
-  "currencyId": "550e8400-e29b-41d4-a716-446655440001",
-  "createdAt": "2024-03-15T10:30:00"
+  "receivable": { ... },
+  "presentValue": 9700.00,
+  "exchangeRate": 0.20,
+  "finalValue": 1940.00,
+  "createdAt": "2026-03-16T10:30:00"
 }
 ```
+
+> O header `X-Request-ID` é sempre retornado na resposta para correlação de logs.
 
 ---
 
@@ -413,13 +473,341 @@ GET /statements?fromDate=2024-03-01&toDate=2024-03-31
 
 ---
 
+### 🔬 **Analytics e Extrato de Liquidação** (`/analytics`) ★ NOVO
+
+#### Gerar Extrato de Liquidação Paginado
+```http
+POST /analytics/liquidation-statement
+Content-Type: application/json
+
+{
+  "startDate": "2026-03-01",
+  "endDate": "2026-03-31",
+  "cedenteName": "Empresa X",   ← opcional
+  "currencyCode": "BRL",        ← opcional
+  "pageNumber": 0,
+  "pageSize": 100
+}
+```
+
+**Resposta (200 OK):**
+```json
+{
+  "items": [
+    {
+      "transactionId": "...",
+      "receivableId": "...",
+      "cedenteName": "Cedente Sistema",
+      "receivableType": "DUPLICATA",
+      "faceValue": 10000.00,
+      "currency": "BRL",
+      "paymentCurrency": "BRL",
+      "maturityDate": "2026-04-15",
+      "presentValue": 9700.00,
+      "exchangeRate": 1.0,
+      "finalValue": 9700.00,
+      "transactionDate": "2026-03-16T10:30:00"
+    }
+  ],
+  "totalRecords": 50,
+  "pageNumber": 0,
+  "pageSize": 100,
+  "totalPages": 1,
+  "totalFaceValue": 500000.00,
+  "totalFinalValue": 485000.00,
+  "transactionCount": 50
+}
+```
+
+#### Análise de Volumes por Moeda
+```http
+GET /analytics/volume-by-currency?startDate=2026-03-01&endDate=2026-03-31
+```
+
+**Resposta (200 OK):**
+```json
+[
+  { "currency": "BRL", "totalVolume": 500000.00, "transactionCount": 40 },
+  { "currency": "USD", "totalVolume": 150000.00, "transactionCount": 10 }
+]
+```
+
+#### Análise de Volumes por Tipo de Recebível
+```http
+GET /analytics/volume-by-receivable-type?startDate=2026-03-01&endDate=2026-03-31
+```
+
+**Resposta (200 OK):**
+```json
+[
+  { "receivableType": "DUPLICATA", "totalVolume": 400000.00, "transactionCount": 35 },
+  { "receivableType": "CHEQUE",    "totalVolume": 250000.00, "transactionCount": 15 }
+]
+```
+
+#### Health Check do Analytics
+```http
+GET /analytics/health
+```
+```json
+{ "status": "UP", "service": "LiquidationStatementService" }
+```
+
+---
+
+## 🔍 Rastreamento Distribuído ★ NOVO
+
+Todas as requisições passam pelo `InterceptadorRastreamento`, que:
+
+- Lê o header `X-Request-ID`; se ausente, gera um UUID automaticamente
+- Lê o header `X-User-ID` (opcional)
+- Armazena ambos em `ContextoRastreamento` via `ThreadLocal`
+- Retorna o `X-Request-ID` no header da resposta
+- Loga início, fim e tempo decorrido de cada requisição
+- Limpa o contexto ao fim de cada ciclo de requisição
+
+```
+Request  ──►  InterceptadorRastreamento
+                   ├── define X-Request-ID no ThreadLocal
+                   ├── define X-User-ID no ThreadLocal (se presente)
+                   └── inicia timer
+
+              Controller / Service / Repository
+                   └── todos os logs incluem [X-Request-ID]
+
+Response ◄──  InterceptadorRastreamento
+                   ├── loga tempo total e status HTTP
+                   └── limpa ThreadLocal
+```
+
+### Headers suportados
+
+| Header | Direção | Descrição |
+|--------|---------|-----------|
+| `X-Request-ID` | Entrada/Saída | ID único de correlação de logs |
+| `X-User-ID` | Entrada | Identificador do usuário requisitante |
+
+---
+
+## 📡 Observabilidade ★ NOVO
+
+### Logging AOP (`LoggingAspect`)
+
+Intercepta automaticamente via AspectJ:
+- **`@Before` controllers** — loga entrada em cada endpoint
+- **`@AfterReturning` services** — loga saída com tipo do resultado
+- **`@AfterThrowing`** — loga exceções em qualquer camada
+
+### Logger de Observabilidade (`LoggerObservabilidade`)
+
+Utilitário de log estruturado que sempre injeta o `X-Request-ID`:
+
+```java
+loggerObservabilidade.inicioOperacao("GerarExtratoLiquidacao", parametros);
+loggerObservabilidade.fimOperacao("GerarExtratoLiquidacao", resultado);
+loggerObservabilidade.erroOperacao("GerarExtratoLiquidacao", ex, contexto);
+loggerObservabilidade.registrarCalculoPreco(valorFace, dias, tipo, resultado);
+loggerObservabilidade.registrarOperacaoCambio(origem, destino, taxa, valor);
+```
+
+### Métricas Micrometer (`MetricsConfiguration`)
+
+Contadores customizados expostos em `/api/actuator/prometheus`:
+
+| Métrica | Descrição |
+|---------|-----------|
+| `srm.transactions.total` | Total de transações processadas |
+| `srm.receivables.total` | Total de recebiveis criados |
+| `srm.exchange_rates.total` | Total de taxas de câmbio atualizadas |
+
+### Health Check de Banco (`DatabaseHealthIndicator`)
+
+Indicador customizado exposto em `/api/actuator/health`:
+
+```json
+{
+  "status": "UP",
+  "components": {
+    "database": {
+      "status": "UP",
+      "details": { "database": "PostgreSQL", "connection": "OK" }
+    }
+  }
+}
+```
+
+---
+
+## 🚨 Alertas Prometheus ★ NOVO
+
+Configurado em `prometheus/alert-rules.yml`:
+
+| Alerta | Condição | Janela |
+|--------|----------|--------|
+| `HighErrorRate` | Taxa de erros > 5% | 5 min |
+| `DatabaseConnectionPoolExhausted` | Pool ativo > 90% | 2 min |
+| `HighResponseTime` | P95 latência > 1s | 5 min |
+| `LowCacheHitRate` | Cache hit < 70% | 10 min |
+
+---
+
+## ⚡ Cache Redis ★ NOVO
+
+Configurado em `CacheConfiguration` com suporte dual:
+
+| `spring.cache.type` | Implementação | Uso |
+|---------------------|--------------|-----|
+| `redis` | `RedisCacheManager` (TTL 10 min) | Produção |
+| `simple` (padrão) | `ConcurrentMapCacheManager` | Desenvolvimento / Testes |
+
+**Caches disponíveis:** `currencies`, `exchangeRate`, `transactions`, `statements`
+
+**Configuração Redis:**
+```properties
+spring.redis.host=localhost
+spring.redis.port=6379
+spring.redis.timeout=2000
+spring.cache.type=simple
+```
+
+---
+
+## ✅ Validação Customizada ★ NOVO
+
+### `@ValidCurrency`
+
+Annotation customizada que valida o código de moeda contra o banco de dados:
+
+```java
+@ValidCurrency(mustExist = true, message = "Moeda não encontrada no sistema")
+private String currency;
+
+@ValidCurrency(mustExist = true)
+private String paymentCurrency;
+```
+
+| Parâmetro | Padrão | Descrição |
+|-----------|--------|-----------|
+| `mustExist` | `false` | Exige que o código exista no banco |
+| `message` | `"Invalid currency code"` | Mensagem de erro customizável |
+
+---
+
+## 🛡️ Tratamento Global de Erros ★ NOVO
+
+`GlobalExceptionHandler` centraliza o tratamento de exceções com respostas padronizadas:
+
+| Exceção | Status HTTP | Descrição |
+|---------|-------------|-----------|
+| `MethodArgumentNotValidException` | 400 | Falha nas validações de entrada com detalhes por campo |
+| `IllegalArgumentException` | 400 | Argumento inválido (ex: tipo de recebível inexistente) |
+| `Exception` | 500 | Erro interno genérico |
+
+**Exemplo de resposta de erro:**
+```json
+{
+  "timestamp": "2026-03-16T10:30:00",
+  "status": 400,
+  "error": "Validação Falhou",
+  "message": "Parâmetros de entrada inválidos",
+  "details": {
+    "startDate": "Data inicial é obrigatória",
+    "currency": "Moeda não encontrada no sistema"
+  },
+  "path": "/api/analytics/liquidation-statement"
+}
+```
+
+---
+
+## 🏢 Estrutura de Serviços
+
+### **CurrencyManagementService**
+- `listCurrencies()` — lista com cache `@Cacheable("currencies")`
+- `createCurrency(CurrencyDTO)` — cria nova moeda
+- `saveExchangeRate(ExchangeRateDTO)` — registra taxa de câmbio
+- `getExchangeRate(from, to)` — obtém taxa com cache `@Cacheable("exchangeRate")`
+
+### **PricingService**
+- `calculate(faceValue, daysToMaturity, receivableType)` — delega à `PricingStrategyFactory`
+
+### **ExchangeRateService**
+- `convertCurrency(amount, from, to)` — converte valores entre moedas
+
+### **TransactionService**
+- `execute(CreateReceivableRequest)` — cria recebível, calcula preço e registra transação com rastreamento
+
+### **StatementService**
+- `generateStatement(from, to)` — extrato por período
+
+### **LiquidationStatementService** ★ NOVO
+- `generateLiquidationStatement(filter)` — extrato paginado com totalizações via SQL nativo otimizado
+- `analyzeByVolume(startDate, endDate)` — agrupamento por moeda
+- `analyzeByReceivableType(startDate, endDate)` — agrupamento por tipo de recebível
+
+---
+
+## 🎯 Padrão Strategy de Precificação ★ NOVO
+
+```
+PricingStrategyFactory
+    ├── "duplicata" → DuplicataStrategy (spread = 1,5%)
+    └── "cheque"    → ChequeStrategy   (spread = 2,5%)
+```
+
+Para adicionar um novo tipo, implemente `PricingStrategy` e registre no `switch` do `PricingStrategyFactory`.
+
+---
+
+## 🐳 Containerização ★ NOVO
+
+### Dockerfile (multi-stage)
+
+```bash
+# Build
+docker build -t srm-credit-engine:latest .
+
+# Run
+docker run -p 8081:8081 \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://host:5432/credit_engine \
+  -e SPRING_DATASOURCE_USERNAME=postgres \
+  -e SPRING_DATASOURCE_PASSWORD=password \
+  srm-credit-engine:latest
+```
+
+### Kubernetes
+
+```bash
+# Deploy
+kubectl apply -f k8s/deployment.yaml
+
+# Verificar pods
+kubectl get pods -l app=srm-credit-engine
+```
+
+**Recursos configurados por pod:**
+
+| Recurso | Request | Limit |
+|---------|---------|-------|
+| CPU | 250m | 500m |
+| Memória | 512Mi | 1Gi |
+
+**Probes configuradas:**
+- `livenessProbe` → `GET /api/actuator/health` (delay: 30s, period: 10s)
+- `readinessProbe` → `GET /api/actuator/health/readiness` (delay: 20s, period: 5s)
+
+O `Deployment` está configurado com **3 réplicas** e exposto via `LoadBalancer` na porta 80 → 8081.
+
+---
+
 ## 🚀 Guia de Instalação e Execução
 
 ### Pré-requisitos
 
-- **Java 21+** - [Download](https://www.oracle.com/java/technologies/downloads/#java21)
-- **Maven 3.9+** - [Download](https://maven.apache.org/download.cgi)
-- **PostgreSQL 12+** - [Download](https://www.postgresql.org/download/)
+- **Java 21+**
+- **Maven 3.9+**
+- **PostgreSQL 12+**
+- **Redis** (opcional — fallback automático para cache em memória)
 
 ### 1️⃣ Clonar o Repositório
 
@@ -430,250 +818,39 @@ cd SRM-Credit-Engine
 
 ### 2️⃣ Configurar Banco de Dados
 
-**Criar database PostgreSQL:**
-
 ```sql
 CREATE DATABASE credit_engine;
 ```
 
-**Criar usuário (opcional):**
-
-```sql
-CREATE USER postgres WITH PASSWORD 'password';
-ALTER ROLE postgres SET client_encoding TO 'utf8';
-ALTER ROLE postgres SET default_transaction_isolation TO 'read committed';
-ALTER ROLE postgres SET default_transaction_deferrable TO on;
-ALTER ROLE postgres SET timezone TO 'UTC';
-```
-
----
-
-### 3️⃣ Configurar Variáveis de Ambiente
-
-Editar `src/main/resources/application.properties`:
+### 3️⃣ Configurar `application.properties`
 
 ```properties
-# Database Configuration
 spring.datasource.url=jdbc:postgresql://localhost:5432/credit_engine
 spring.datasource.username=postgres
 spring.datasource.password=password
-spring.datasource.driver-class-name=org.postgresql.Driver
 
-# JPA/Hibernate
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.hibernate.ddl-auto=validate
-spring.jpa.show-sql=false
-
-# Flyway
 spring.flyway.enabled=true
-spring.flyway.baseline-on-migrate=true
-
-# Server
+spring.cache.type=simple   # use "redis" em produção
 server.port=8081
 server.servlet.context-path=/api
 ```
 
----
-
 ### 4️⃣ Compilar e Executar
-
-**Compilar o projeto:**
 
 ```bash
 ./mvnw clean install
-```
-
-**Executar a aplicação:**
-
-```bash
 ./mvnw spring-boot:run
 ```
 
-**Ou usando o JAR gerado:**
-
-```bash
-java -jar target/SRM-Credit-Engine-0.0.1-SNAPSHOT.jar
-```
-
----
-
 ### 5️⃣ Verificar Execução
 
-A aplicação estará disponível em:
-
-- **API:** `http://localhost:8081/api`
-- **Swagger UI:** `http://localhost:8081/api/swagger-ui.html`
-- **OpenAPI JSON:** `http://localhost:8081/api/v3/api-docs`
-
----
-
-## 🏢 Estrutura de Serviços
-
-### **CurrencyManagementService**
-Responsável por gerenciar moedas e taxas de câmbio.
-
-**Métodos Principais:**
-- `listCurrencies()` - Lista todas as moedas
-- `createCurrency(CurrencyDTO)` - Cria nova moeda
-- `saveExchangeRate(ExchangeRateDTO)` - Registra taxa de câmbio
-- `getExchangeRate(fromCurrency, toCurrency)` - Obtém taxa entre moedas
-
----
-
-### **PricingService**
-Implementa a lógica de precificação de recebiveis.
-
-**Métodos Principais:**
-- `calculate(BigDecimal faceValue, int daysToMaturity, String receivableType)` - Calcula preço final
-- Usa padrão Strategy para diferentes tipos de recebiveis
-
-**Fórmula de Cálculo:**
-```
-Preço Final = Valor de Face × (1 - (Taxa de Desconto + Spread))
-
-Taxa de Desconto = (dias_até_vencimento / 365) × Taxa de Juros
-Spread = Spread específico do tipo de recebível
-```
-
----
-
-### **ExchangeRateService**
-Gerencia conversões de moedas.
-
-**Métodos Principais:**
-- `convertCurrency(BigDecimal amount, String fromCurrency, String toCurrency)` - Converte valores
-- `updateExchangeRate(String from, String to, BigDecimal newRate)` - Atualiza taxa
-
----
-
-### **TransactionService**
-Registra e gerencia transações.
-
-**Métodos Principais:**
-- `recordTransaction(TransactionRequest)` - Registra nova transação
-- `getTransactionsByReceivable(UUID receivableId)` - Lista transações de um recebível
-- `getTransactionHistory()` - Histórico completo
-
----
-
-### **StatementService**
-Gera extratos consolidados.
-
-**Métodos Principais:**
-- `generateStatement(LocalDate from, LocalDate to)` - Extrato por período
-- `getMonthlyStatement(YearMonth)` - Extrato mensal
-- `calculateTotals()` - Totalizações
-
----
-
-## 🔐 Validações
-
-O sistema implementa validações em múltiplas camadas:
-
-### Validações de Entrada (DTOs)
-- ✓ Campos obrigatórios não vazios
-- ✓ Formatos de dados corretos
-- ✓ Ranges numéricos válidos
-- ✓ Datas válidas (não no passado)
-
-**Exemplo com Lombok:**
-```java
-@Valid @RequestBody SimulationRequestDTO req
-```
-
----
-
-### Validações de Negócio
-- ✓ Moeda deve existir no sistema
-- ✓ Taxa de câmbio deve estar registrada
-- ✓ Recebível não pode estar duplicado
-- ✓ Cedente deve estar validado
-
----
-
-## 📊 Migrações de Banco de Dados
-
-O sistema usa **Flyway** para versionamento automático do banco de dados.
-
-### Estrutura de Migrações
-
-```
-src/main/resources/db/migration/
-├── V1__Initial_Schema.sql        # Schema principal
-├── V2__Insert_Initial_Data.sql   # Dados iniciais
-└── V3__Add_New_Column.sql        # (Futuras migrações)
-```
-
-### Executar Migrações
-
-As migrações são executadas automaticamente na inicialização da aplicação:
-
-```properties
-spring.flyway.enabled=true
-spring.flyway.baseline-on-migrate=true
-spring.flyway.locations=classpath:db/migration
-```
-
----
-
-## 📚 DTOs Principais
-
-### **SimulationRequestDTO**
-```java
-public class SimulationRequestDTO {
-    @NotNull
-    private BigDecimal faceValue;        // Valor de face
-    
-    @NotNull
-    private Integer daysToMaturity;      // Dias até vencimento
-    
-    @NotBlank
-    private String receivableType;       // Tipo de recebível
-}
-```
-
-### **CurrencyDTO**
-```java
-public class CurrencyDTO {
-    private UUID id;
-    
-    @NotBlank
-    @Size(min=3, max=3)
-    private String code;                 // Código ISO
-    
-    @NotBlank
-    private String name;                 // Nome da moeda
-}
-```
-
-### **ExchangeRateDTO**
-```java
-public class ExchangeRateDTO {
-    private UUID id;
-    
-    @NotBlank
-    private String fromCurrency;         // De qual moeda
-    
-    @NotBlank
-    private String toCurrency;           // Para qual moeda
-    
-    @NotNull
-    @DecimalMin("0.01")
-    private BigDecimal rate;             // Taxa de conversão
-}
-```
-
-### **TransactionStatementDTO**
-```java
-public class TransactionStatementDTO {
-    private UUID id;
-    private UUID receivableId;
-    private String operationType;
-    private BigDecimal amount;
-    private UUID currencyId;
-    private LocalDateTime createdAt;
-}
-```
+| Recurso | URL |
+|---------|-----|
+| API | `http://localhost:8081/api` |
+| Swagger UI | `http://localhost:8081/api/swagger-ui.html` |
+| OpenAPI JSON | `http://localhost:8081/api/v3/api-docs` |
+| Actuator Health | `http://localhost:8081/api/actuator/health` |
+| Métricas Prometheus | `http://localhost:8081/api/actuator/prometheus` |
 
 ---
 
@@ -683,20 +860,53 @@ public class TransactionStatementDTO {
 
 ```
 src/test/java/com/srm/credit/engine/SRM_Credit_Engine/
-└── SrmCreditEngineApplicationTests.java
+├── SrmCreditEngineApplicationTests.java          # Smoke test — contexto Spring
+├── SrmCreditEngineIntegrationTests.java          # Testes de integração gerais
+├── controller/
+│   ├── CurrencyControllerTest.java
+│   └── TransactionControllerTest.java
+├── dto/
+│   ├── CreateReceivableRequestTest.java
+│   ├── CurrencyDTOTest.java
+│   └── ExchangeRateDTOTest.java
+├── entity/
+│   ├── CurrencyTest.java
+│   ├── ExchangeRateTest.java
+│   └── TransactionTest.java
+├── integration/
+│   ├── LiquidationStatementIntegrationTest.java  # ★ NOVO
+│   ├── RastreamentoIntegrationTest.java          # ★ NOVO — X-Request-ID
+│   └── TransactionIntegrationTest.java
+├── service/
+│   ├── CurrencyManagementServiceTest.java
+│   ├── ExchangeRateServiceTest.java
+│   ├── LiquidationStatementServiceTest.java      # ★ NOVO
+│   ├── PricingServiceTest.java
+│   ├── StatementServiceTest.java
+│   └── TransactionServiceTest.java
+├── strategy/
+│   ├── ChequeStrategyTest.java                   # ★ NOVO
+│   ├── DuplicataStrategyTest.java                # ★ NOVO
+│   └── PricingStrategyFactoryTest.java           # ★ NOVO
+└── utils/
+    └── ContextoRastreamentoTest.java             # ★ NOVO
 ```
 
 ### Executar Testes
 
 ```bash
+# Todos os testes
 ./mvnw test
-```
 
-### Com Cobertura
+# Testes específicos
+./mvnw -Dtest=LiquidationStatementIntegrationTest test
+./mvnw -Dtest=RastreamentoIntegrationTest test
 
-```bash
+# Com cobertura
 ./mvnw test jacoco:report
 ```
+
+> **Perfil de teste:** usa H2 em memória + cache `simple` + Flyway desabilitado para isolamento total.
 
 ---
 
@@ -710,138 +920,76 @@ src/test/java/com/srm/credit/engine/SRM_Credit_Engine/
 | `server.servlet.context-path` | /api | Path base da API |
 | `spring.jpa.show-sql` | false | Mostrar SQL no console |
 | `spring.flyway.enabled` | true | Ativar Flyway |
-| `spring.datasource.hikari.maximum-pool-size` | 10 | Conexões do pool |
+| `spring.cache.type` | simple | Tipo de cache (`simple` ou `redis`) |
+| `spring.redis.host` | localhost | Host Redis |
+| `spring.redis.port` | 6379 | Porta Redis |
+| `spring.datasource.hikari.maximum-pool-size` | 20 | Tamanho máximo do pool |
+| `management.endpoints.web.exposure.include` | health,metrics,prometheus | Actuator endpoints |
+
+### Logging Configurado
+
+```properties
+logging.level.com.srm.credit.engine=DEBUG
+logging.file.name=logs/application.log
+logging.max-history=30
+logging.max-size=100MB
+```
 
 ### Perfis de Execução
 
-**Development:**
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=dev"
-```
+# Desenvolvimento
+./mvnw spring-boot:run
 
-**Production:**
-```bash
+# Produção
 ./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=prod"
 ```
 
 ---
 
-## 🐛 Tratamento de Erros
+## 📊 Diagrama de Componentes
 
-O sistema implementa tratamento robusto de exceções:
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         HTTP Request                            │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                  ┌────────────▼────────────┐
+                  │  InterceptadorRastreamento│  X-Request-ID / X-User-ID
+                  │  + LoggingAspect (AOP)   │  Logs entrada/saída
+                  └────────────┬────────────┘
+                               │
+           ┌───────────────────┼──────────────────────┐
+           │                   │                      │
+  ┌────────▼──────┐   ┌────────▼──────┐   ┌──────────▼──────────┐
+  │CurrencyController│ │TransactionController│ │LiquidationStatement│
+  └────────┬──────┘   └────────┬──────┘   │   Controller        │
+           │                   │          └──────────┬──────────┘
+           ▼                   ▼                     ▼
+  ┌─────────────────┐ ┌────────────────┐  ┌──────────────────────┐
+  │CurrencyMgmtSvc  │ │TransactionSvc  │  │LiquidationStmtSvc    │
+  │@Cacheable cache │ │+PricingService │  │+LoggerObservabilidade│
+  └────────┬────────┘ └───────┬────────┘  └──────────┬───────────┘
+           │                  │                       │
+           └──────────────────┼───────────────────────┘
+                              │
+                  ┌───────────▼───────────┐
+                  │  Spring Data JPA       │
+                  │  LiquidationStmtRepo   │
+                  │  (SQL Nativo Otimizado)│
+                  └───────────┬───────────┘
+                              │
+                  ┌───────────▼───────────┐
+                  │      PostgreSQL        │
+                  └───────────────────────┘
 
-### Exceções Customizadas
-
-- `ResourceNotFoundException` - Recurso não encontrado (404)
-- `InvalidOperationException` - Operação inválida (400)
-- `DuplicateResourceException` - Recurso duplicado (409)
-- `ValidationException` - Erro de validação (422)
-
-### Exemplo de Resposta de Erro
-
-```json
-{
-  "timestamp": "2024-03-15T10:30:00",
-  "status": 404,
-  "error": "Not Found",
-  "message": "Currency not found with id: abc123",
-  "path": "/api/currencies/abc123"
-}
+           Redis ◄──── CacheConfiguration (TTL 10min)
+           Prometheus ◄── MetricsConfiguration + Actuator
 ```
 
 ---
 
-## 📈 Performance e Otimização
-
-### Índices de Banco de Dados
-```sql
-CREATE INDEX idx_currencies_code ON currencies(code);
-CREATE INDEX idx_exchange_rates_from_to ON exchange_rates(from_currency_id, to_currency_id);
-CREATE INDEX idx_receivables_currency ON receivables(currency_id);
-CREATE INDEX idx_transactions_created_at ON transactions(created_at);
-```
-
-### Connection Pooling
-```properties
-spring.datasource.hikari.maximum-pool-size=20
-spring.datasource.hikari.minimum-idle=5
-spring.datasource.hikari.connection-timeout=20000
-```
----
-
-## 📊 Diagrama de Classes
-
-```
-┌─────────────────────┐
-│   CurrencyController│
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────────────┐
-│ CurrencyManagementService   │
-└──────────┬──────────────────┘
-           │
-           ▼
-    ┌──────────────┐
-    │ Currency     │
-    │ ExchangeRate │
-    └──────────────┘
-
-┌────────────────────────┐
-│ReceivableController    │
-└──────────┬─────────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ PricingService       │
-└──────────┬───────────┘
-           │
-           ▼
-    ┌─────────────┐
-    │  Receivable │
-    │  Cedents    │
-    └─────────────┘
-
-┌─────────────────────┐
-│TransactionController│
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│ TransactionService  │
-└──────────┬──────────┘
-           │
-           ▼
-    ┌────────────┐
-    │ Transaction│
-    └────────────┘
-```
-
----
-
-## 🚀 Quick Start
-
-```bash
-# 1. Clone o repositório
-git clone https://github.com/seu-usuario/SRM-Credit-Engine.git
-cd SRM-Credit-Engine
-
-# 2. Configure o banco de dados PostgreSQL
-createdb credit_engine
-
-# 3. Atualize application.properties com suas credenciais
-
-# 4. Compile e execute
-./mvnw clean install
-./mvnw spring-boot:run
-
-# 5. Acesse a API
-# Swagger: http://localhost:8081/api/swagger-ui.html
-```
-
----
-
-**Última Atualização:** 15 de Março de 2025 
+**Última Atualização:** 16 de Março de 2026  
 **Versão:** 0.0.1-SNAPSHOT  
 **Status:** Em Desenvolvimento
 

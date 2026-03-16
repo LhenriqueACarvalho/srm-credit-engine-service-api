@@ -28,6 +28,6 @@ public class CacheConfiguration {
     @Bean
     @ConditionalOnProperty(name = "spring.cache.type", havingValue = "simple", matchIfMissing = true)
     public CacheManager simpleCacheManager() {
-        return new ConcurrentMapCacheManager("currencies", "exchangeRates", "transactions", "statements");
+        return new ConcurrentMapCacheManager("currencies", "exchangeRate", "transactions", "statements");
     }
 }

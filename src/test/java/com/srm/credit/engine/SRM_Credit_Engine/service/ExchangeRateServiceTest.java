@@ -3,6 +3,7 @@ package com.srm.credit.engine.SRM_Credit_Engine.service;
 import com.srm.credit.engine.SRM_Credit_Engine.repository.ExchangeRateRepository;
 import com.srm.credit.engine.SRM_Credit_Engine.entity.ExchangeRate;
 import com.srm.credit.engine.SRM_Credit_Engine.entity.Currency;
+import com.srm.credit.engine.SRM_Credit_Engine.utils.LoggerObservabilidade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,21 +27,22 @@ class ExchangeRateServiceTest {
     @Mock
     private ExchangeRateRepository repository;
 
+    @Mock
+    private LoggerObservabilidade loggerObservabilidade;
+
     @InjectMocks
     private ExchangeRateService exchangeRateService;
 
     private ExchangeRate mockExchangeRate;
-    private Currency mockFromCurrency;
-    private Currency mockToCurrency;
 
     @BeforeEach
     void setUp() {
-        mockFromCurrency = new Currency();
+        Currency mockFromCurrency = new Currency();
         mockFromCurrency.setId(UUID.randomUUID());
         mockFromCurrency.setCode("BRL");
         mockFromCurrency.setName("Brazilian Real");
 
-        mockToCurrency = new Currency();
+        Currency mockToCurrency = new Currency();
         mockToCurrency.setId(UUID.randomUUID());
         mockToCurrency.setCode("USD");
         mockToCurrency.setName("US Dollar");
@@ -77,7 +78,7 @@ class ExchangeRateServiceTest {
                 .thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(java.util.NoSuchElementException.class, 
+        assertThrows(IllegalArgumentException.class, 
                 () -> exchangeRateService.getRate("EUR", "JPY"));
     }
 

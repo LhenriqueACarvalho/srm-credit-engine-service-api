@@ -34,10 +34,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
         JOIN currencies cur ON r.currency_id = cur.id
         LEFT JOIN cedents c ON r.cedent_id = c.id
         WHERE 
-            (t.created_at::date >= :startDate OR :startDate IS NULL)
-            AND (t.created_at::date <= :endDate OR :endDate IS NULL)
+            (CAST(t.created_at AS DATE) >= :startDate OR :startDate IS NULL)
+            AND (CAST(t.created_at AS DATE) <= :endDate OR :endDate IS NULL)
             AND (cur.code = :currency OR :currency IS NULL)
-            AND (c.name ILIKE :cedent OR :cedent IS NULL)
+            AND (UPPER(c.name) LIKE UPPER(CONCAT('%', :cedent, '%')) OR :cedent IS NULL)
         ORDER BY t.created_at DESC
         """,
             countQuery = """
@@ -46,10 +46,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
         LEFT JOIN cedents c ON r.cedent_id = c.id
         JOIN currencies cur ON r.currency_id = cur.id
         WHERE 
-            (t.created_at::date >= :startDate OR :startDate IS NULL)
-            AND (t.created_at::date <= :endDate OR :endDate IS NULL)
+            (CAST(t.created_at AS DATE) >= :startDate OR :startDate IS NULL)
+            AND (CAST(t.created_at AS DATE) <= :endDate OR :endDate IS NULL)
             AND (cur.code = :currency OR :currency IS NULL)
-            AND (c.name ILIKE :cedent OR :cedent IS NULL)
+            AND (UPPER(c.name) LIKE UPPER(CONCAT('%', :cedent, '%')) OR :cedent IS NULL)
         """,
             nativeQuery = true)
     Page<TransactionStatementDTO> findLiquidationStatement(
@@ -62,7 +62,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     @Query(value = "SELECT t FROM Transaction t WHERE t.createdAt BETWEEN ?1 AND ?2 ORDER BY t.createdAt DESC")
     List<Transaction> findTransactionsByDateRange(LocalDateTime startDate, LocalDateTime endDate);
 
-    @Query(value = "SELECT COUNT(*) FROM transactions WHERE created_at >= NOW() - INTERVAL '1 hour'",
+    @Query(value = "SELECT COUNT(*) FROM transactions WHERE created_at >= DATEADD('HOUR', -1, CURRENT_TIMESTAMP)",
             nativeQuery = true)
     Long countRecentTransactions();
 }
