@@ -17,7 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(
 		webEnvironment = SpringBootTest.WebEnvironment.NONE,
 		properties = {
-				"spring.cache.type=none",
+				"spring.cache.type=simple",
 				"spring.flyway.enabled=false"
 		}
 )
