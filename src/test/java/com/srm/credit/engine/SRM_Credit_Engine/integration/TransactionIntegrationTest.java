@@ -5,7 +5,9 @@ import com.srm.credit.engine.SRM_Credit_Engine.entity.ExchangeRate;
 import com.srm.credit.engine.SRM_Credit_Engine.entity.ReceivableType;
 import com.srm.credit.engine.SRM_Credit_Engine.repository.CurrencyRepository;
 import com.srm.credit.engine.SRM_Credit_Engine.repository.ExchangeRateRepository;
+import com.srm.credit.engine.SRM_Credit_Engine.repository.ReceivableRepository;
 import com.srm.credit.engine.SRM_Credit_Engine.repository.ReceivableTypeRepository;
+import com.srm.credit.engine.SRM_Credit_Engine.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,16 +42,29 @@ public class TransactionIntegrationTest {
     @Autowired
     private ReceivableTypeRepository receivableTypeRepository;
 
+    @Autowired
+    private ReceivableRepository receivableRepository;
+
+    @Autowired
+    private TransactionRepository transactionRepository;
+
     @BeforeEach
     public void setUp() {
+        // Clear existing data in correct order to respect foreign key constraints
+        // Delete child tables first, then parent tables
+        transactionRepository.deleteAll();
+        receivableRepository.deleteAll();
+        exchangeRateRepository.deleteAll();
+        receivableTypeRepository.deleteAll();
+        currencyRepository.deleteAll();
         // Create receivable types
         ReceivableType duplicata = new ReceivableType();
         duplicata.setId(UUID.randomUUID());
-        duplicata.setName("duplicata");
+        duplicata.setName("DUPLICATA");
         duplicata.setSpread(new BigDecimal("0.0150"));
         receivableTypeRepository.save(duplicata);
 
-        // Create currencies
+        // ...existing code...
         Currency brl = new Currency();
         brl.setId(UUID.randomUUID());
         brl.setCode("BRL");
@@ -78,7 +93,7 @@ public class TransactionIntegrationTest {
             {
                 "faceValue": 10000,
                 "daysToMaturity": 30,
-                "receivableType": "duplicata",
+                "receivableType": "DUPLICATA",
                 "currency": "BRL",
                 "paymentCurrency": "USD"
             }

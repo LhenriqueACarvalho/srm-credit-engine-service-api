@@ -74,7 +74,7 @@ public class CurrencyManagementService {
         ExchangeRate rate = exchangeRateRepository
                 .findTopByFromCurrency_CodeAndToCurrency_CodeOrderByCreatedAtDesc(from, to)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Exchange rate not found for " + from + "/" + to
+                        "Exchange rate nao encontrado " + from + "/" + to
                 ));
         return toDTO(rate);
     }

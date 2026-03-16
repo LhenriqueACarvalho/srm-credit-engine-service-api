@@ -1,0 +1,39 @@
+<!-- application-prod.properties (yml format)
+# Configuração para produção
+
+spring.application.name=SRM-Credit-Engine
+
+# Logging - Apenas WARNING em produção
+logging.level.root=WARN
+logging.level.com.srm.credit.engine=INFO
+logging.file.name=/var/log/srm-credit-engine/application.log
+
+# Console desabilitado em produção
+logging.level.org.springframework.web=WARN
+logging.level.org.hibernate=ERROR
+
+# Metrics
+management.endpoints.web.exposure.include=health,metrics,prometheus
+management.endpoint.health.show-details=when-authorized
+management.metrics.enable.jvm=true
+management.metrics.enable.process=true
+
+# Sleuth - Rastreamento distribuído
+spring.sleuth.tracing.export.zipkin.endpoint=http://zipkin:9411/api/v2/spans
+spring.sleuth.sampler.probability=0.1
+
+# Redis - Cache em produção
+spring.redis.host=${REDIS_HOST:localhost}
+spring.redis.port=${REDIS_PORT:6379}
+spring.redis.password=${REDIS_PASSWORD:}
+spring.redis.timeout=5000
+spring.cache.type=redis
+
+# Connection Pool - Otimizado para produção
+spring.datasource.hikari.maximum-pool-size=30
+spring.datasource.hikari.minimum-idle=10
+spring.datasource.hikari.connection-timeout=30000
+spring.datasource.hikari.idle-timeout=600000
+spring.datasource.hikari.max-lifetime=1800000
+-->
+

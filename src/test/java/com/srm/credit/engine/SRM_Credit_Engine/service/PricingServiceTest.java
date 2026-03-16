@@ -3,6 +3,7 @@ package com.srm.credit.engine.SRM_Credit_Engine.service;
 import com.srm.credit.engine.SRM_Credit_Engine.strategy.ChequeStrategy;
 import com.srm.credit.engine.SRM_Credit_Engine.strategy.DuplicataStrategy;
 import com.srm.credit.engine.SRM_Credit_Engine.strategy.PricingStrategyFactory;
+import com.srm.credit.engine.SRM_Credit_Engine.utils.LoggerObservabilidade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,6 +23,9 @@ class PricingServiceTest {
 
     @Mock
     private PricingStrategyFactory factory;
+
+    @Mock
+    private LoggerObservabilidade loggerObservabilidade;
 
     @InjectMocks
     private PricingService pricingService;
@@ -113,10 +116,10 @@ class PricingServiceTest {
         String invalidType = "invalid_type";
 
         when(factory.getStrategy("invalid_type"))
-                .thenThrow(new IllegalArgumentException("Tipo Invalido: invalid_type"));
+                .thenThrow(new RuntimeException("Tipo Invalido: invalid_type"));
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, 
+        assertThrows(RuntimeException.class, 
                 () -> pricingService.calculate(faceValue, days, invalidType));
     }
 

@@ -1,10 +1,15 @@
 package com.srm.credit.engine.SRM_Credit_Engine.service;
 
 import com.srm.credit.engine.SRM_Credit_Engine.dto.CreateReceivableRequest;
+import com.srm.credit.engine.SRM_Credit_Engine.entity.Currency;
 import com.srm.credit.engine.SRM_Credit_Engine.entity.Receivable;
+import com.srm.credit.engine.SRM_Credit_Engine.entity.ReceivableType;
 import com.srm.credit.engine.SRM_Credit_Engine.entity.Transaction;
 import com.srm.credit.engine.SRM_Credit_Engine.repository.ReceivableRepository;
 import com.srm.credit.engine.SRM_Credit_Engine.repository.TransactionRepository;
+import com.srm.credit.engine.SRM_Credit_Engine.repository.ReceivableTypeRepository;
+import com.srm.credit.engine.SRM_Credit_Engine.repository.CurrencyRepository;
+import com.srm.credit.engine.SRM_Credit_Engine.utils.LoggerObservabilidade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,10 +20,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +46,15 @@ class TransactionServiceTest {
     @Mock
     private TransactionRepository transactionRepo;
 
+    @Mock
+    private ReceivableTypeRepository receivableTypeRepo;
+
+    @Mock
+    private CurrencyRepository currencyRepo;
+
+    @Mock
+    private LoggerObservabilidade loggerObservabilidade;
+
     @InjectMocks
     private TransactionService transactionService;
 
@@ -47,7 +65,7 @@ class TransactionServiceTest {
         mockRequest = new CreateReceivableRequest();
         mockRequest.setFaceValue(new BigDecimal("10000"));
         mockRequest.setDaysToMaturity(30);
-        mockRequest.setReceivableType("duplicata");
+        mockRequest.setReceivableType("DUPLICATA");
         mockRequest.setCurrency("BRL");
         mockRequest.setPaymentCurrency("USD");
     }
@@ -70,6 +88,16 @@ class TransactionServiceTest {
         mockTransaction.setExchangeRate(exchangeRate);
         mockTransaction.setFinalValue(expectedFinalValue);
 
+        // Mock receivable type
+        ReceivableType receivableType = new ReceivableType();
+        receivableType.setId(UUID.randomUUID());
+        receivableType.setName("DUPLICATA");
+        
+        // Mock currency
+        Currency currency = new Currency();
+        currency.setId(UUID.randomUUID());
+        currency.setCode("BRL");
+
         when(pricingService.calculate(
                 mockRequest.getFaceValue(),
                 mockRequest.getDaysToMaturity(),
@@ -81,6 +109,8 @@ class TransactionServiceTest {
                 mockRequest.getPaymentCurrency()
         )).thenReturn(exchangeRate);
 
+        when(receivableTypeRepo.findByName("DUPLICATA")).thenReturn(Optional.of(receivableType));
+        when(currencyRepo.findByCode("BRL")).thenReturn(Optional.of(currency));
         when(receivableRepo.save(any(Receivable.class))).thenReturn(mockReceivable);
         when(transactionRepo.save(any(Transaction.class))).thenReturn(mockTransaction);
 
@@ -119,9 +149,16 @@ class TransactionServiceTest {
         Transaction mockTransaction = new Transaction();
         mockTransaction.setFinalValue(expectedFinalValue);
 
+        ReceivableType receivableType = new ReceivableType();
+        receivableType.setName("DUPLICATA");
+        Currency currency = new Currency();
+        currency.setCode("BRL");
+
         when(pricingService.calculate(any(BigDecimal.class), anyInt(), anyString()))
                 .thenReturn(presentValue);
         when(exchangeService.getRate(anyString(), anyString())).thenReturn(exchangeRate);
+        when(receivableTypeRepo.findByName("DUPLICATA")).thenReturn(Optional.of(receivableType));
+        when(currencyRepo.findByCode("BRL")).thenReturn(Optional.of(currency));
         when(receivableRepo.save(any(Receivable.class))).thenReturn(mockReceivable);
         when(transactionRepo.save(any(Transaction.class))).thenReturn(mockTransaction);
 
@@ -139,9 +176,16 @@ class TransactionServiceTest {
         Receivable mockReceivable = new Receivable();
         Transaction mockTransaction = new Transaction();
 
+        ReceivableType receivableType = new ReceivableType();
+        receivableType.setName("DUPLICATA");
+        Currency currency = new Currency();
+        currency.setCode("BRL");
+
         when(pricingService.calculate(any(BigDecimal.class), anyInt(), anyString()))
                 .thenReturn(new BigDecimal("9700"));
         when(exchangeService.getRate(anyString(), anyString())).thenReturn(new BigDecimal("0.20"));
+        when(receivableTypeRepo.findByName("DUPLICATA")).thenReturn(Optional.of(receivableType));
+        when(currencyRepo.findByCode("BRL")).thenReturn(Optional.of(currency));
         when(receivableRepo.save(any(Receivable.class))).thenReturn(mockReceivable);
         when(transactionRepo.save(any(Transaction.class))).thenReturn(mockTransaction);
 
@@ -158,14 +202,21 @@ class TransactionServiceTest {
     @DisplayName("Should handle different receivable types")
     void testExecuteWithDifferentReceivableType() {
         // Arrange
-        mockRequest.setReceivableType("cheque");
+        mockRequest.setReceivableType("CHEQUE");
 
         Receivable mockReceivable = new Receivable();
         Transaction mockTransaction = new Transaction();
 
-        when(pricingService.calculate(any(BigDecimal.class), anyInt(), eq("cheque")))
+        ReceivableType receivableType = new ReceivableType();
+        receivableType.setName("CHEQUE");
+        Currency currency = new Currency();
+        currency.setCode("BRL");
+
+        when(pricingService.calculate(any(BigDecimal.class), anyInt(), eq("CHEQUE")))
                 .thenReturn(new BigDecimal("9800"));
         when(exchangeService.getRate(anyString(), anyString())).thenReturn(new BigDecimal("0.20"));
+        when(receivableTypeRepo.findByName("CHEQUE")).thenReturn(Optional.of(receivableType));
+        when(currencyRepo.findByCode("BRL")).thenReturn(Optional.of(currency));
         when(receivableRepo.save(any(Receivable.class))).thenReturn(mockReceivable);
         when(transactionRepo.save(any(Transaction.class))).thenReturn(mockTransaction);
 
@@ -173,7 +224,7 @@ class TransactionServiceTest {
         transactionService.execute(mockRequest);
 
         // Assert
-        verify(pricingService).calculate(any(BigDecimal.class), anyInt(), eq("cheque"));
+        verify(pricingService).calculate(any(BigDecimal.class), anyInt(), eq("CHEQUE"));
     }
 
     @Test
@@ -186,9 +237,16 @@ class TransactionServiceTest {
         Transaction mockTransaction = new Transaction();
         mockTransaction.setReceivable(mockReceivable);
 
+        ReceivableType receivableType = new ReceivableType();
+        receivableType.setName("DUPLICATA");
+        Currency currency = new Currency();
+        currency.setCode("BRL");
+
         when(pricingService.calculate(any(BigDecimal.class), anyInt(), anyString()))
                 .thenReturn(new BigDecimal("9700"));
         when(exchangeService.getRate(anyString(), anyString())).thenReturn(new BigDecimal("0.20"));
+        when(receivableTypeRepo.findByName("DUPLICATA")).thenReturn(Optional.of(receivableType));
+        when(currencyRepo.findByCode("BRL")).thenReturn(Optional.of(currency));
         when(receivableRepo.save(any(Receivable.class))).thenReturn(mockReceivable);
         when(transactionRepo.save(any(Transaction.class))).thenReturn(mockTransaction);
 
@@ -209,9 +267,16 @@ class TransactionServiceTest {
         Receivable mockReceivable = new Receivable();
         Transaction mockTransaction = new Transaction();
 
+        ReceivableType receivableType = new ReceivableType();
+        receivableType.setName("DUPLICATA");
+        Currency currency = new Currency();
+        currency.setCode("BRL");
+
         when(pricingService.calculate(any(BigDecimal.class), anyInt(), anyString()))
                 .thenReturn(new BigDecimal("970000"));
         when(exchangeService.getRate(anyString(), anyString())).thenReturn(new BigDecimal("0.20"));
+        when(receivableTypeRepo.findByName("DUPLICATA")).thenReturn(Optional.of(receivableType));
+        when(currencyRepo.findByCode("BRL")).thenReturn(Optional.of(currency));
         when(receivableRepo.save(any(Receivable.class))).thenReturn(mockReceivable);
         when(transactionRepo.save(any(Transaction.class))).thenReturn(mockTransaction);
 
